@@ -1,4 +1,4 @@
-import { Button, Flex, Heading, Icon } from '@chakra-ui/react';
+import { Button, Flex, Icon } from '@chakra-ui/react';
 import { TbLogout2 } from 'react-icons/tb';
 import { MdOutlineInventory } from 'react-icons/md';
 import React, { useContext } from 'react';

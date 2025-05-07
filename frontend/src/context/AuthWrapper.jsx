@@ -1,5 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
-import { createContext, useState } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance, { axiosLog } from '../services/apiClient';
 import { useSnackbar } from 'notistack';
@@ -30,7 +30,6 @@ export const AuthWrapper = ({ children }) => {
     }
 
     try {
-      console.log('Login request URL:', axiosLog.defaults.baseURL + 'token/');
       const res = await axiosLog.post('token/', { username, password });
 
       localStorage.setItem('access_token', res.data.access);
@@ -38,8 +37,10 @@ export const AuthWrapper = ({ children }) => {
       axiosLog.defaults.headers['Authorization'] = `Bearer ${res.data.access}`;
       axiosInstance.defaults.headers['Authorization'] = `Bearer ${res.data.access}`;
 
-      setUser(jwtDecode(res.data.access));
+      const decodedUser = jwtDecode(res.data.access);
+      setUser(decodedUser);
       setAuthTokens({ access: res.data.access, refresh: res.data.refresh });
+      enqueueSnackbar('Login successful!', { variant: 'success' });
       navigate('/');
     } catch (error) {
       console.error('Login error:', error.response || error.message);
@@ -62,6 +63,14 @@ export const AuthWrapper = ({ children }) => {
       await axiosInstance.post('inventory/logout/blacklist/', {
         refresh_token: localStorage.getItem('refresh_token'),
       });
+      enqueueSnackbar('Logged out successfully!', { variant: 'success' });
+    } catch (error) {
+      console.error('Logout error:', error.response || error.message);
+      enqueueSnackbar('Failed to log out. Please try again.', {
+        variant: 'error',
+        autoHideDuration: 4000,
+      });
+    } finally {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       axiosLog.defaults.headers['Authorization'] = undefined;
@@ -69,14 +78,15 @@ export const AuthWrapper = ({ children }) => {
       setUser(null);
       setAuthTokens(null);
       navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      enqueueSnackbar('Failed to log out. Please try again.', {
-        variant: 'error',
-        autoHideDuration: 4000,
-      });
     }
   };
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authTokens && !user && window.location.pathname !== '/login') {
+      navigate('/login');
+    }
+  }, [authTokens, user, navigate]);
 
   const contextData = {
     user,

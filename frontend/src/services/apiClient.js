@@ -30,13 +30,17 @@ axiosInstance.interceptors.request.use(async (req) => {
     return req;
   }
 
-  const user = jwtDecode(accessToken);
-  const isExpired = dayjs.unix(user.exp).diff(dayjs()) < 1;
-
-  if (!isExpired) return req;
-
-  const refreshToken = localStorage.getItem('refresh_token');
   try {
+    const user = jwtDecode(accessToken);
+    const isExpired = dayjs.unix(user.exp).diff(dayjs()) < 1000; // 1-second buffer
+
+    if (!isExpired) return req;
+
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
     const response = await axios.post(`${baseURL}token/refresh/`, {
       refresh: refreshToken,
     });
@@ -46,11 +50,13 @@ axiosInstance.interceptors.request.use(async (req) => {
     localStorage.setItem('refresh_token', response.data.refresh);
     req.headers.Authorization = `Bearer ${response.data.access}`;
     axiosLog.defaults.headers['Authorization'] = `Bearer ${response.data.access}`;
+    axiosInstance.defaults.headers['Authorization'] = `Bearer ${response.data.access}`;
   } catch (error) {
     console.error('Token refresh failed:', error);
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     accessToken = null;
+    window.location.href = '/login'; // Redirect to login
   }
 
   return req;

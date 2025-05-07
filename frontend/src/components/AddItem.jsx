@@ -1,4 +1,3 @@
-
 import {
   Box,
   Button,
@@ -6,50 +5,75 @@ import {
   FormLabel,
   HStack,
   Input,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
   Text,
   Textarea,
   VStack,
+  IconButton,
+  Flex,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../services/apiClient';
 import { useSnackbar } from 'notistack';
+import { FaPlus, FaTrash } from 'react-icons/fa';
 
 const AddItem = () => {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
   const initialPrice = '0.00';
-  const initialQuantity = '0';
-
   const [values, setValues] = useState({
     product_name: '',
     price: initialPrice,
-    quantity: initialQuantity,
     description: '',
+    inventory_numbers: [],
   });
+
+  const handleAddInventoryNumber = () => {
+    setValues({
+      ...values,
+      inventory_numbers: [...values.inventory_numbers, ''],
+    });
+  };
+
+  const handleInventoryNumberChange = (index, value) => {
+    const updatedNumbers = [...values.inventory_numbers];
+    updatedNumbers[index] = value;
+    setValues({ ...values, inventory_numbers: updatedNumbers });
+  };
+
+  const handleRemoveInventoryNumber = (index) => {
+    const updatedNumbers = values.inventory_numbers.filter((_, i) => i !== index);
+    setValues({ ...values, inventory_numbers: updatedNumbers });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const response = await axiosInstance.post('inventory/', values);
-      console.log(response);
-      enqueueSnackbar('Item Added!', { variant: 'success' });
+    if (values.inventory_numbers.some((num) => !num.trim())) {
+      enqueueSnackbar('All inventory numbers must be filled!', { variant: 'error' });
+      return;
+    }
 
-      // Reset form
+    try {
+      const response = await axiosInstance.post('inventory/', {
+        product_name: values.product_name,
+        price: values.price,
+        description: values.description,
+        inventory_numbers: values.inventory_numbers,
+      });
+      enqueueSnackbar('Item Added!', { variant: 'success' });
       setValues({
         product_name: '',
         price: initialPrice,
-        quantity: initialQuantity,
         description: '',
+        inventory_numbers: [],
       });
-
       navigate('/');
     } catch (error) {
       enqueueSnackbar('Add: Something went wrong!', { variant: 'error' });
@@ -71,7 +95,7 @@ const AddItem = () => {
             </Text>
             <VStack p={10} spacing={8}>
               {/* Product Name */}
-              <FormControl id="product_name">
+              <FormControl id="product_name" isRequired>
                 <FormLabel fontSize="18px">Product Name</FormLabel>
                 <Input
                   borderColor="gray.400"
@@ -86,7 +110,7 @@ const AddItem = () => {
               </FormControl>
 
               {/* Price */}
-              <FormControl id="price">
+              <FormControl id="price" isRequired>
                 <FormLabel fontSize="18px">Price</FormLabel>
                 <NumberInput
                   borderColor="gray.400"
@@ -108,25 +132,35 @@ const AddItem = () => {
                 </NumberInput>
               </FormControl>
 
-              {/* Quantity */}
-              <FormControl id="quantity">
-                <FormLabel fontSize="18px">Quantity</FormLabel>
-                <NumberInput
-                  borderColor="gray.400"
-                  value={values.quantity}
-                  onChange={(valueAsString) =>
-                    setValues({ ...values, quantity: valueAsString })
-                  }
-                  min={0}
-                  size="lg"
-                  name="quantity"
+              {/* Inventory Numbers */}
+              <FormControl id="inventory_numbers" isRequired>
+                <FormLabel fontSize="18px">Inventory Numbers</FormLabel>
+                {values.inventory_numbers.map((number, index) => (
+                  <Flex key={index} mb={2} alignItems="center">
+                    <Input
+                      borderColor="gray.400"
+                      value={number}
+                      onChange={(e) =>
+                        handleInventoryNumberChange(index, e.target.value)
+                      }
+                      placeholder={`Inventory Number ${index + 1}`}
+                      mr={2}
+                    />
+                    <IconButton
+                      icon={<FaTrash />}
+                      colorScheme="red"
+                      onClick={() => handleRemoveInventoryNumber(index)}
+                    />
+                  </Flex>
+                ))}
+                <Button
+                  leftIcon={<FaPlus />}
+                  colorScheme="green"
+                  onClick={handleAddInventoryNumber}
+                  mt={2}
                 >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
+                  Add Inventory Number
+                </Button>
               </FormControl>
 
               {/* Description */}

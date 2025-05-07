@@ -35,6 +35,9 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.username || !formData.password) {
+      return;
+    }
     loginUser(formData);
   };
 
@@ -112,6 +115,7 @@ const Login = () => {
                   backgroundColor: 'green.600',
                   cursor: 'pointer',
                 }}
+                isDisabled={!formData.username || !formData.password}
               >
                 Kirish
               </Button>

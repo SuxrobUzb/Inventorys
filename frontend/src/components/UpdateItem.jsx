@@ -14,11 +14,14 @@ import {
   Text,
   Textarea,
   VStack,
+  IconButton,
+  Flex,
 } from '@chakra-ui/react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../services/apiClient';
 import axios from 'axios';
 import { useSnackbar } from 'notistack';
+import { FaPlus, FaTrash } from 'react-icons/fa';
 
 const UpdateItem = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -26,54 +29,76 @@ const UpdateItem = () => {
   const navigate = useNavigate();
   const [values, setValues] = useState({
     product_name: '',
-    price: '',
-    quantity: '',
+    price: '0.00',
     description: '',
+    inventory_numbers: [],
   });
 
   useEffect(() => {
     const getData = async () => {
-      console.log('ID: ', id);
       try {
         const response = await axiosInstance.get(`inventory/product/${id}/`);
-
         setValues({
-          ...values,
           product_name: response.data.product_name,
           price: response.data.price,
-          quantity: response.data.quantity,
           description: response.data.description,
+          inventory_numbers: response.data.inventory_numbers.map(
+            (inv) => inv.inventory_number
+          ),
         });
       } catch (error) {
         enqueueSnackbar('Update: Error occurred while fetching data', {
           variant: 'error',
           autoHideDuration: 5000,
         });
-        console.log('Error occured', error);
+        console.error('Error occurred:', error);
       }
     };
     const cancelToken = axios.CancelToken.source();
     getData();
-
     return () => {
       cancelToken.cancel();
     };
-  }, []);
+  }, [id]);
+
+  const handleAddInventoryNumber = () => {
+    setValues({
+      ...values,
+      inventory_numbers: [...values.inventory_numbers, ''],
+    });
+  };
+
+  const handleInventoryNumberChange = (index, value) => {
+    const updatedNumbers = [...values.inventory_numbers];
+    updatedNumbers[index] = value;
+    setValues({ ...values, inventory_numbers: updatedNumbers });
+  };
+
+  const handleRemoveInventoryNumber = (index) => {
+    const updatedNumbers = values.inventory_numbers.filter((_, i) => i !== index);
+    setValues({ ...values, inventory_numbers: updatedNumbers });
+  };
 
   const handleEdit = async (e) => {
     e.preventDefault();
 
+    if (values.inventory_numbers.some((num) => !num.trim())) {
+      enqueueSnackbar('All inventory numbers must be filled!', { variant: 'error' });
+      return;
+    }
+
     try {
-      await axiosInstance.put(`inventory/product/${id}/`, values);
-      enqueueSnackbar('Item Updated!', {
-        variant: 'success',
+      await axiosInstance.put(`inventory/product/${id}/`, {
+        product_name: values.product_name,
+        price: values.price,
+        description: values.description,
+        inventory_numbers: values.inventory_numbers,
       });
+      enqueueSnackbar('Item Updated!', { variant: 'success' });
       navigate('/');
     } catch (error) {
-      enqueueSnackbar('Update: Something went wrong!', {
-        variant: 'error',
-      });
-      console.log(error);
+      enqueueSnackbar('Update: Something went wrong!', { variant: 'error' });
+      console.error('Update error:', error);
     }
   };
 
@@ -90,20 +115,20 @@ const UpdateItem = () => {
               Edit Item
             </Text>
             <VStack p={10} spacing={8}>
-              <FormControl id="productName">
+              <FormControl id="product_name" isRequired>
                 <FormLabel fontSize="18px">Product Name</FormLabel>
                 <Input
                   borderColor="gray.400"
                   type="text"
                   value={values.product_name}
-                  name="productName"
+                  name="product_name"
                   size="lg"
-                  onChange={(value) =>
-                    setValues({ ...values, product_name: value.target.value })
+                  onChange={(e) =>
+                    setValues({ ...values, product_name: e.target.value })
                   }
                 />
               </FormControl>
-              <FormControl id="price">
+              <FormControl id="price" isRequired>
                 <FormLabel fontSize="18px">Price</FormLabel>
                 <NumberInput
                   borderColor="gray.400"
@@ -111,7 +136,6 @@ const UpdateItem = () => {
                   onChange={(value) => setValues({ ...values, price: value })}
                   min={0}
                   step={0.01}
-                  defaultValue={0.0}
                   precision={2}
                   size="lg"
                   name="price"
@@ -123,24 +147,34 @@ const UpdateItem = () => {
                   </NumberInputStepper>
                 </NumberInput>
               </FormControl>
-              <FormControl id="quantity">
-                <FormLabel fontSize="18px">Quantity</FormLabel>
-                <NumberInput
-                  borderColor="gray.400"
-                  value={values.quantity}
-                  min={0}
-                  name="quantity"
-                  size="lg"
-                  onChange={(value) =>
-                    setValues({ ...values, quantity: value })
-                  }
+              <FormControl id="inventory_numbers" isRequired>
+                <FormLabel fontSize="18px">Inventory Numbers</FormLabel>
+                {values.inventory_numbers.map((number, index) => (
+                  <Flex key={index} mb={2} alignItems="center">
+                    <Input
+                      borderColor="gray.400"
+                      value={number}
+                      onChange={(e) =>
+                        handleInventoryNumberChange(index, e.target.value)
+                      }
+                      placeholder={`Inventory Number ${index + 1}`}
+                      mr={2}
+                    />
+                    <IconButton
+                      icon={<FaTrash />}
+                      colorScheme="red"
+                      onClick={() => handleRemoveInventoryNumber(index)}
+                    />
+                  </Flex>
+                ))}
+                <Button
+                  leftIcon={<FaPlus />}
+                  colorScheme="green"
+                  onClick={handleAddInventoryNumber}
+                  mt={2}
                 >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
+                  Add Inventory Number
+                </Button>
               </FormControl>
               <FormControl id="description">
                 <FormLabel fontSize="18px">Description</FormLabel>
@@ -149,8 +183,8 @@ const UpdateItem = () => {
                   name="description"
                   value={values.description}
                   size="lg"
-                  onChange={(value) =>
-                    setValues({ ...values, description: value.target.value })
+                  onChange={(e) =>
+                    setValues({ ...values, description: e.target.value })
                   }
                 />
               </FormControl>

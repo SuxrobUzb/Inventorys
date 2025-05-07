@@ -14,7 +14,7 @@ import {
 import axios from 'axios';
 import { useContext, useEffect, useState } from 'react';
 import { FaEdit } from 'react-icons/fa';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthWrapper.jsx';
 import axiosInstance from '../services/apiClient.js';
 import DeleteItem from './DeleteItem.jsx';
@@ -37,11 +37,16 @@ const columns = [
     Header: 'Description',
     accessor: 'description',
   },
+  {
+    Header: 'Inventory Numbers',
+    accessor: 'inventory_numbers',
+  },
 ];
 
 const Inventory = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { logoutUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [item, setItem] = useState([]);
   const [total, setTotal] = useState(0);
 
@@ -51,29 +56,32 @@ const Inventory = () => {
         const response = await axiosInstance.get('inventory/');
         setItem(response.data.products);
         setTotal(response.data.total_items);
-
-        console.log(response.data.products);
       } catch (error) {
         if (axios.isCancel(error)) {
           console.log('Request cancelled!');
         } else {
-          enqueueSnackbar('Inventory: Something went wrong!', {
-            variant: 'error',
-          });
-          console.error('Error occurred:', error);
-          logoutUser();
+          console.error('Error occurred:', error.response || error.message);
+          if (error.response?.status === 401) {
+            enqueueSnackbar('Session expired. Please log in again.', {
+              variant: 'error',
+            });
+            navigate('/login');
+          } else {
+            enqueueSnackbar('Inventory: Something went wrong!', {
+              variant: 'error',
+            });
+          }
         }
       }
     };
 
     const cancelToken = axios.CancelToken.source();
-
     fetchData();
 
     return () => {
       cancelToken.cancel();
     };
-  }, []);
+  }, [navigate]);
 
   const handleDelete = async (id) => {
     try {
@@ -127,6 +135,8 @@ const Inventory = () => {
                   <Td key={column.accessor}>
                     {column.accessor === 'price'
                       ? `₱${row[column.accessor]}`
+                      : column.accessor === 'inventory_numbers'
+                      ? row[column.accessor].map((inv) => inv.inventory_number).join(', ')
                       : row[column.accessor]}
                   </Td>
                 ))}

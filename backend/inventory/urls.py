@@ -1,10 +1,12 @@
 from django.urls import path
-from .views import ProductList, ProductDetail, BlackListTokenUpdateView
+from . import views
 
-app_name='inventory'
+app_name = 'inventory'
 
 urlpatterns = [
-    path('product/<int:pk>/', ProductDetail.as_view(), name='detailcreate'),
-    path('', ProductList.as_view(), name='productlistcreate'),
-    path('logout/blacklist/', BlackListTokenUpdateView.as_view(), name='blacklist')
+    path('', views.ProductList.as_view(), name='product_list'),
+    path('product/<int:pk>/', views.ProductDetail.as_view(), name='product_detail'),
+    path('inventory-numbers/', views.InventoryNumberList.as_view(), name='inventory_number_list'),
+    path('inventory-numbers/<int:pk>/', views.InventoryNumberDetail.as_view(), name='inventory_number_detail'),
+    path('logout/blacklist/', views.BlackListTokenUpdateView.as_view(), name='blacklist'),
 ]
