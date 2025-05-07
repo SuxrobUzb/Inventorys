@@ -12,24 +12,19 @@ import {
   Stack,
   Flex,
 } from '@chakra-ui/react';
-
 import { FaUserAlt, FaLock } from 'react-icons/fa';
 import { AuthContext } from '../context/AuthWrapper.jsx';
 import house from '../assets/home.png';
 
-// Chakra Icon Componentlari
 const CFaUserAlt = chakra(FaUserAlt);
 const CFaLock = chakra(FaLock);
 
 const Login = () => {
   const { loginUser } = useContext(AuthContext);
-
-  const initialFormData = {
+  const [formData, setFormData] = useState({
     username: '',
     password: '',
-  };
-
-  const [formData, setFormData] = useState(initialFormData);
+  });
 
   const handleChange = (e) => {
     setFormData({
@@ -40,21 +35,16 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    loginUser(formData); // ← formData uzatilmoqda
+    loginUser(formData);
   };
 
   return (
     <Center h="100vh">
-      <Stack
-        flexDir="column"
-        mb="2"
-        justifyContent="center"
-        alignItems="center"
-      >
+      <Stack flexDir="column" mb="2" justifyContent="center" alignItems="center">
         <Flex>
           <Box color="gray.800">
             <Box maxW="35px" mb="-10px">
-              <img src={house} alt="logo" />
+              <img src={house} alt="InveSTORE logo" />
             </Box>
             <Heading fontSize="50px">InveSTORE</Heading>
           </Box>
@@ -71,7 +61,7 @@ const Login = () => {
         >
           <Box my={1} textAlign="left">
             <form onSubmit={handleSubmit}>
-              <FormControl>
+              <FormControl isRequired>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
                     <CFaUserAlt color="gray.400" />
@@ -79,20 +69,19 @@ const Login = () => {
                   <Input
                     borderColor="gray.400"
                     color="black"
-                    placeholder="username"
+                    placeholder="Username"
                     name="username"
+                    value={formData.username}
                     onChange={handleChange}
-                    sx={{ '::placeholder': { color: 'gray.400' } }}
                     _hover={{
                       borderColor: 'gray.500',
-                      color: 'black',
                       cursor: 'pointer',
                     }}
                   />
                 </InputGroup>
               </FormControl>
 
-              <FormControl mt={6}>
+              <FormControl isRequired mt={6}>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
                     <CFaLock color="gray.400" />
@@ -100,13 +89,12 @@ const Login = () => {
                   <Input
                     borderColor="gray.400"
                     type="password"
-                    placeholder="password"
+                    placeholder="Password"
                     name="password"
+                    value={formData.password}
                     onChange={handleChange}
-                    sx={{ '::placeholder': { color: 'gray.400' } }}
                     _hover={{
                       borderColor: 'gray.500',
-                      color: 'black',
                       cursor: 'pointer',
                     }}
                   />
